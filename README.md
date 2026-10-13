@@ -1,325 +1,133 @@
-# Laravel Modular System
+# Aplikasi Manajemen Barang
 
-Sistem modular Laravel dengan auto discovery module menggunakan `ModuleServiceProvider`.
+Aplikasi manajemen barang berbasis web untuk membantu pengelolaan data barang dan transaksi secara terstruktur.
 
-Setiap module berdiri sendiri dan dapat digunakan kembali pada project Laravel lain tanpa registrasi manual.
+## 1. Link Deployment
 
-## Struktur Project
+- **Live App:** [URL Aplikasi](https://laravel-jmc-production.up.railway.app)
+- **Video Demo:** [URL Video Demo](https://drive.google.com/file/d/12eL0WPs6yoW43MU8N3x8nbvF2kU0Uz8P/view?usp=sharing)
 
-```text
-app/
-└── Providers/
-    └── ModuleServiceProvider.php
+## 2. Tech Stack
 
-modules/
-└── Account/
-    ├── module.json
-    ├── Providers/
-    │   └── AccountServiceProvider.php
-    ├── Controllers/
-    ├── Models/
-    ├── Routes/
-    │   ├── web.php
-    │   └── api.php
-    ├── Resources/
-    │   └── views/
-    ├── Database/
-    │   └── migrations/
-    └── Config/
-```
+Teknologi yang digunakan dalam pengembangan aplikasi:
 
-## Instalasi
+- **Frontend:** React, TypeScript, Inertia.js, Tailwind CSS
+- **Backend:** PHP, Laravel 13
+- **Database:** MySQL
+- **Package Manager:** npm dan Composer
 
-1. Tambahkan autoload module pada `composer.json`:
+## 3. Petunjuk Instalasi Lokal
 
-```json
-{
-    "autoload": {
-        "psr-4": {
-            "App\\": "app/",
-            "Modules\\": "modules/"
-        }
-    }
-}
-```
+Ikuti langkah-langkah berikut untuk menjalankan aplikasi di lingkungan lokal.
 
-2. Jalankan command:
+### Prasyarat
+
+Pastikan perangkat sudah memiliki:
+
+- PHP sesuai versi yang didukung aplikasi
+- Composer
+- Node.js dan npm
+- MySQL
+- Git
+
+### Langkah Instalasi
+
+**1. Clone repository**
 
 ```bash
-composer dump-autoload
+git clone <URL_REPOSITORY>
+cd <NAMA_FOLDER_REPOSITORY>
 ```
 
-3. Tambahkan provider di `bootstrap/providers.php`:
-
-```php
-return [
-    App\Providers\AppServiceProvider::class,
-    App\Providers\ModuleServiceProvider::class,
-];
-```
-
-## Membuat Module
-
-Gunakan command:
+**2. Install dependency frontend**
 
 ```bash
-php artisan module:make Account
+npm install
 ```
 
-Hasil:
-```text
-modules/Account
+**3. Install dependency backend**
+
+```bash
+composer install
 ```
 
-## Module Configuration
+**4. Buat Database**
 
-Setiap module memiliki file konfigurasi di `modules/Account/module.json`:
+Buat database anda di lokal Mysql
 
-```json
-{
-    "name": "Account",
-    "enabled": true,
-    "namespace": "Modules\\Account",
-    "provider": "Modules\\Account\\Providers\\AccountServiceProvider"
-}
+**5. Generate application key**
+
+```bash
+php artisan key:generate
 ```
 
-## Module Provider
+**6. Jalankan instalasi aplikasi**
 
-Lokasi: `modules/Account/Providers/AccountServiceProvider.php`
+```bash
+php artisan app:install
+```
 
-Provider bertugas melakukan load:
-- Routes
-- Views
-- Migration
-- Config
+Perintah tersebut digunakan untuk menjalankan proses instalasi aplikasi yang telah dikonfigurasi di dalam proyek.
+
+### 7. Jalankan Aplikasi
+
+Aplikasi dapat dijalankan menggunakan **Laragon** atau **Laravel Herd**.
+
+**1. Jalankan web server**
+
+Pastikan Laragon atau Laravel Herd sudah aktif dan repository berada di direktori yang terdeteksi oleh web server.
+
+**2. Jalankan frontend**
+
+Buka terminal pada direktori proyek, lalu jalankan:
+
+```bash
+npm run dev
+```
+
+**3. Akses aplikasi**
+
+Buka aplikasi melalui domain lokal `.test` yang telah dikonfigurasi pada Laragon atau Laravel Herd.
 
 Contoh:
 
-```php
-<?php
+http://nama-proyek.test
 
-namespace Modules\Account\Providers;
+Ganti `nama-proyek` dengan nama domain lokal yang dikonfigurasi untuk proyek tersebut.
 
-use Illuminate\Support\ServiceProvider;
+**Catatan:** Pastikan document root domain diarahkan ke direktori `public` milik Laravel agar aplikasi dapat diakses dengan benar.
 
-class AccountServiceProvider extends ServiceProvider
-{
-    public function register(): void
-    {
-    }
+### Konfigurasi Database
 
-    public function boot(): void
-    {
-        $modulePath = realpath(__DIR__.'/..');
+Sebelum menjalankan aplikasi, pastikan konfigurasi database pada file `.env` sesuai dengan lingkungan lokal.
 
-        if (is_file($modulePath.'/Routes/web.php')) {
-            $this->loadRoutesFrom(
-                $modulePath.'/Routes/web.php'
-            );
-        }
+Sesuaikan variabel berikut:
 
-        if (is_file($modulePath.'/Routes/api.php')) {
-            $this->loadRoutesFrom(
-                $modulePath.'/Routes/api.php'
-            );
-        }
-
-        if (is_dir($modulePath.'/Resources/views')) {
-            $this->loadViewsFrom(
-                $modulePath.'/Resources/views',
-                'account'
-            );
-        }
-
-        if (is_dir($modulePath.'/Database/migrations')) {
-            $this->loadMigrationsFrom(
-                $modulePath.'/Database/migrations'
-            );
-        }
-
-        if (is_file($modulePath.'/Config/config.php')) {
-            $this->mergeConfigFrom(
-                $modulePath.'/Config/config.php',
-                'account'
-            );
-        }
-    }
-}
+```env
+DB_CONNECTION=mysql
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_DATABASE=nama_database
+DB_USERNAME=root
+DB_PASSWORD=
 ```
 
-## Membuat Route Module
+Pastikan database MySQL sudah tersedia dan dapat diakses oleh aplikasi.
 
-Lokasi: `modules/Account/Routes/web.php`
+## 4. Akun Pengujian
 
-Contoh:
+Gunakan kredensial berikut untuk login dan menguji aplikasi.
 
-```php
-<?php
+| Role       | Email                 | Password   |
+| ---------- | --------------------- | ---------- |
+| Admin      | admin@example.com     | `password` |
+| Operator 1 | operator1@example.com | `password` |
+| Operator 2 | operator2@example.com | `password` |
+| Operator 3 | operator3@example.com | `password` |
 
-use Illuminate\Support\Facades\Route;
+**Catatan:** Pastikan akun pengujian sudah dibuat melalui seeder atau proses instalasi aplikasi sebelum login.
 
-Route::prefix('account')
-    ->as('account.')
-    ->group(function () {
+## 5. Catatan
 
-        Route::get('/account-test', function () {
-            return 'Account Module';
-        })->name('index');
-
-    });
-```
-
-Cek route:
-
-```bash
-php artisan route:list
-```
-
-Hasil:
-```text
-GET account/account-test account.index
-```
-
-Pemanggilan:
-
-```php
-route('account.index')
-```
-
-## Controller Module
-
-Lokasi: `modules/Account/Controllers/`
-
-Contoh:
-
-```php
-<?php
-
-namespace Modules\Account\Controllers;
-
-use Illuminate\Routing\Controller;
-
-class AccountController extends Controller
-{
-    public function index()
-    {
-        return 'Account';
-    }
-}
-```
-
-## Model Module
-
-Lokasi: `modules/Account/Models/`
-
-Contoh:
-
-```php
-<?php
-
-namespace Modules\Account\Models;
-
-use Illuminate\Database\Eloquent\Model;
-
-class Account extends Model
-{
-
-}
-```
-
-## View Module
-
-Lokasi: `modules/Account/Resources/views`
-
-Pemanggilan:
-
-```php
-return view('account::index');
-```
-
-## Migration Module
-
-Lokasi: `modules/Account/Database/migrations`
-
-Jalankan:
-
-```bash
-php artisan migrate
-```
-
-## Config Module
-
-Lokasi: `modules/Account/Config/config.php`
-
-Akses:
-
-```php
-config('account.key');
-```
-
-## Menonaktifkan Module
-
-Edit `modules/Account/module.json` dan ubah:
-
-```json
-{
-    "enabled": false
-}
-```
-
-Module tidak akan dimuat.
-
-## Membuat Module Baru
-
-Contoh struktur direktori:
-
-```text
-modules/
-├── Account
-├── Product
-├── Order
-└── Blog
-```
-
-Struktur setiap module:
-
-```text
-ModuleName/
-├── module.json
-├── Providers/
-├── Controllers/
-├── Models/
-├── Routes/
-├── Resources/
-├── Database/
-└── Config/
-```
-
-## Clear Cache
-
-Setelah menambah atau mengubah module:
-
-```bash
-composer dump-autoload
-php artisan route:clear
-php artisan config:clear
-```
-
-## Namespace Standard
-
-Contoh module: `modules/Product`
-
-- Namespace: `Modules\Product`
-- Controller: `Modules\Product\Controllers\ProductController`
-- Model: `Modules\Product\Models\Product`
-- Provider: `Modules\Product\Providers\ProductServiceProvider`
-
-## Tujuan
-
-Sistem ini dibuat agar:
-- Module dapat dipindahkan antar project Laravel.
-- Module tidak tergantung versi Laravel tertentu.
-- Module dapat aktif atau nonaktif melalui konfigurasi.
-- Tidak perlu registrasi provider secara manual.
-- Setiap fitur memiliki struktur kode sendiri.
+- Pastikan seluruh dependency berhasil diinstal sebelum menjalankan aplikasi.
+- Jika aplikasi menggunakan layanan eksternal, sesuaikan konfigurasi `.env` berdasarkan kebutuhan proyek.
