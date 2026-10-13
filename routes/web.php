@@ -3,7 +3,9 @@
 use Illuminate\Support\Facades\Route;
 use Modules\Front\Controllers\FrontController;
 
-Route::get('/', [FrontController::class, 'index'])->name('home');
+Route::get('/', function () {
+    return redirect()->route('login');
+});
 
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::inertia('dashboard', 'dashboard')->name('dashboard');

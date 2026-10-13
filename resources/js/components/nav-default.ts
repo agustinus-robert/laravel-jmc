@@ -75,11 +75,11 @@ export const mainNavGroups: NavGroup[] = [
                 href: '/account/role',
                 icon: Settings,
             },
-            {
-                title: 'Permission',
-                href: '/account/permission',
-                icon: Shield,
-            },
+            // {
+            //     title: 'Permission',
+            //     href: '/account/permission',
+            //     icon: Shield,
+            // },
         ],
     },
 ];

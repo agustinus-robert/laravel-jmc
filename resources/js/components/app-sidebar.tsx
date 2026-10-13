@@ -19,8 +19,14 @@ import { dashboard } from '@/routes';
 import { mainNavGroups } from '@/components/nav-default';
 import { hotelNavGroups } from '../../../modules/Hotel/resources/js/navigation';
 
+interface PageProps {
+    [key: string]: unknown;
+    isAdmin: boolean;
+}
+
 export function AppSidebar() {
-    const { url } = usePage();
+    const { url, props } = usePage<PageProps>();
+    const isAdmin = props.isAdmin === true;
 
     let navGroups = mainNavGroups;
 
@@ -32,7 +38,10 @@ export function AppSidebar() {
             break;
 
         default:
-            navGroups = mainNavGroups;
+            navGroups = mainNavGroups.filter(
+                (group) =>
+                    group.title !== 'Manajemen User' || isAdmin,
+            );
             break;
     }
 

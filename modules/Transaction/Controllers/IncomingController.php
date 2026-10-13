@@ -8,8 +8,10 @@ use Illuminate\Routing\Controller;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
+use Maatwebsite\Excel\Facades\Excel;
 use Modules\Master\Models\Category;
 use Modules\Master\Models\SubCategory;
+use Modules\Transaction\Exports\IncomingExport;
 use Modules\Transaction\Models\Incoming;
 use Modules\Transaction\Requests\IncomingRequests;
 use Modules\Transaction\Services\IncomingService;
@@ -22,17 +24,39 @@ class IncomingController extends Controller
 
     public function index(Request $request)
     {
-        $incomings = $this->incomingService->paginate(
-            $request->only([
-                'name',
-                'dateFrom',
-                'dateTo',
-                'archived',
-            ])
-        );
+        $filters = $request->only([
+            'category_id',
+            'sub_category_id',
+            'year',
+            'search',
+            'sort',
+            'direction',
+            'dateFrom',
+            'dateTo',
+            'archived',
+        ]);
+
+        $incomings = $this->incomingService->paginate($filters);
 
         return Inertia::render('transaction/incoming/index', [
             'incomings' => $incomings,
+            'filters' => $filters,
+
+            'categories' => Category::query()
+                ->select('id', 'name')
+                ->orderBy('name')
+                ->get(),
+
+            'subCategories' => SubCategory::query()
+                ->select('id', 'category_id', 'name')
+                ->orderBy('name')
+                ->get(),
+
+            'years' => Incoming::query()
+                ->selectRaw('YEAR(created_at) as year')
+                ->distinct()
+                ->orderByDesc('year')
+                ->pluck('year'),
         ]);
     }
 
@@ -66,6 +90,26 @@ class IncomingController extends Controller
             'isAdmin' => $this->isAdmin(),
             'currentOperatorId' => Auth::id(),
         ]);
+    }
+
+    public function export(Request $request)
+    {
+        $filters = $request->only([
+            'category_id',
+            'sub_category_id',
+            'year',
+            'search',
+            'sort',
+            'direction',
+            'dateFrom',
+            'dateTo',
+            'archived',
+        ]);
+
+        return Excel::download(
+            new IncomingExport($filters),
+            'data-pemasukan-' . now()->format('Y-m-d-His') . '.xlsx'
+        );
     }
 
     public function store(IncomingRequests $request)
@@ -188,7 +232,6 @@ class IncomingController extends Controller
             ->get();
     }
 
-    
     private function getOperators()
     {
         $query = User::query()
@@ -204,3 +247,4 @@ class IncomingController extends Controller
         return $query->orderBy('name')->get();
     }
 }
+

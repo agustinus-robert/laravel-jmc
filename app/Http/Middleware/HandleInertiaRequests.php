@@ -23,83 +23,24 @@ class HandleInertiaRequests extends Middleware
 
     public function share(Request $request): array
     {
+        $user = $request->user();
+
         return [
             ...parent::share($request),
 
             'name' => config('app.name'),
-            'languages' => $this->languages(),
-
             'auth' => [
-                'user' => $request->user(),
+                'user' => $user,
             ],
 
-            'can' => $request->user()?->permissionMap() ?? [],
+            'isAdmin' => $user
+                ? $user->roles()->where('slug', 'admin')->exists()
+                : false,
+
+            'can' => $user?->permissionMap() ?? [],
 
             'sidebarOpen' => ! $request->hasCookie('sidebar_state')
                 || $request->cookie('sidebar_state') === 'true',
         ];
-    }
-
-    private function prepareMenuItems(
-        $items,
-        array $categories,
-        array $tags
-    ): void {
-        foreach ($items as $item) {
-            $item->itemTaxonomies->each(
-                function ($taxonomy) use ($categories, $tags) {
-                    $type = $taxonomy->modelable_type;
-
-                    if ($type === CoreCategory::class) {
-                        $taxonomy->setAttribute(
-                            'options',
-                            $categories
-                        );
-                    } elseif ($type === CoreTag::class) {
-                        $taxonomy->setAttribute(
-                            'options',
-                            $tags
-                        );
-                    } else {
-                        $taxonomy->setAttribute(
-                            'options',
-                            []
-                        );
-                    }
-
-                    $taxonomy->setAttribute(
-                        'value',
-                        $taxonomy->modelable_id
-                    );
-                }
-            );
-
-            if ($item->childrenRecursive->isNotEmpty()) {
-                $this->prepareMenuItems(
-                    $item->childrenRecursive,
-                    $categories,
-                    $tags
-                );
-            }
-        }
-    }
-
-    private function languages()
-    {
-        return Language::query()
-            ->select([
-                'id',
-                'name',
-                'slug',
-            ])
-            ->orderBy('id')
-            ->get()
-            ->map(fn($language) => [
-                'id' => $language->id,
-                'name' => $language->name,
-                'slug' => $language->slug,
-            ])
-            ->values()
-            ->all();
     }
 }
