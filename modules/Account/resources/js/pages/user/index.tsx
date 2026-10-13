@@ -1,9 +1,17 @@
 import { Head, Link, router } from '@inertiajs/react';
 import { route } from 'ziggy-js';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import AppModal from '../../../../../../resources/js/components/app-modal';
 import UserForm from './form';
-import { Pencil, Trash, FolderOpen, Plus } from 'lucide-react';
+import {
+    Pencil,
+    Trash,
+    FolderOpen,
+    Plus,
+    Users,
+    Lock,
+    LockOpen,
+} from 'lucide-react';
 import { toast } from 'sonner';
 
 interface User {
@@ -11,6 +19,11 @@ interface User {
     name: string;
     email: string;
     role_id: number;
+    lock: boolean | number;
+    roles: {
+        id: number;
+        name: string;
+    }[];
     creator: {
         id: number;
         name: string;
@@ -38,13 +51,52 @@ interface Props {
         links: PaginationLink[];
     };
     roles: RoleOption[];
+    filters: {
+        role_id?: string | number | null;
+    };
 }
 
-export default function Role({ user, roles }: Props) {
+export default function Role({ user, roles, filters }: Props) {
     const [modalOpen, setModalOpen] = useState(false);
     const [selectedUser, setSelectedUser] = useState<User | undefined>(
         undefined,
     );
+    const [roleId, setRoleId] = useState(String(filters.role_id ?? ''));
+
+    useEffect(() => {
+        const currentRoleId = String(filters.role_id ?? '');
+
+        if (roleId === currentRoleId) {
+            return;
+        }
+
+        const timeout = setTimeout(() => {
+            router.get(
+                route('account.user.index'),
+                {
+                    role_id: roleId || undefined,
+                },
+                {
+                    preserveState: true,
+                    preserveScroll: true,
+                    replace: true,
+                },
+            );
+        }, 200);
+
+        return () => clearTimeout(timeout);
+    }, [roleId, filters.role_id]);
+
+    function isLocked(item: User): boolean {
+        return Boolean(item.lock);
+    }
+
+    function isAdmin(item: User): boolean {
+        return (
+            item.roles?.some((role) => role.name.toLowerCase() === 'admin') ??
+            false
+        );
+    }
 
     function handleCreate() {
         setSelectedUser(undefined);
@@ -61,12 +113,46 @@ export default function Role({ user, roles }: Props) {
         setSelectedUser(undefined);
     }
 
+    function handleToggleLock(item: User) {
+        if (isAdmin(item)) {
+            return;
+        }
+
+        const locked = isLocked(item);
+        const action = locked ? 'membuka kunci' : 'mengunci';
+
+        if (
+            !confirm(`Apakah Anda yakin ingin ${action} pengguna ${item.name}?`)
+        ) {
+            return;
+        }
+
+        router.patch(
+            route('account.user.locked', { user: item.id }),
+            {},
+            {
+                preserveScroll: true,
+                onSuccess: () => {
+                    toast.success(
+                        locked
+                            ? 'Pengguna berhasil dibuka.'
+                            : 'Pengguna berhasil dikunci.',
+                    );
+                },
+                onError: () => {
+                    toast.error('Gagal mengubah status pengguna.');
+                },
+            },
+        );
+    }
+
     function handleDelete(id: number) {
         if (!confirm('Apakah Anda yakin ingin menghapus pengguna ini?')) {
             return;
         }
 
         router.delete(route('account.user.destroy', { role: id }), {
+            preserveScroll: true,
             onSuccess: () => {
                 toast.success('Pengguna berhasil dihapus.');
             },
@@ -97,6 +183,35 @@ export default function Role({ user, roles }: Props) {
                         </button>
                     </div>
 
+                    <div className="border-b border-slate-800 px-6 py-4">
+                        <div className="w-full sm:max-w-xs">
+                            <label
+                                htmlFor="role-filter"
+                                className="mb-2 flex items-center gap-2 text-sm font-medium text-slate-300"
+                            >
+                                <Users className="h-4 w-4" />
+                                Filter Role
+                            </label>
+
+                            <select
+                                id="role-filter"
+                                value={roleId}
+                                onChange={(event) =>
+                                    setRoleId(event.target.value)
+                                }
+                                className="w-full rounded-md border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-100 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 focus:outline-none"
+                            >
+                                <option value="">Semua Role</option>
+
+                                {roles.map((role) => (
+                                    <option key={role.id} value={role.id}>
+                                        {role.name}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+                    </div>
+
                     <div className="w-full overflow-x-auto">
                         <table className="w-full text-left text-sm text-slate-300">
                             <thead className="border-b border-slate-800 bg-background text-xs tracking-wider text-slate-400 uppercase">
@@ -115,42 +230,92 @@ export default function Role({ user, roles }: Props) {
 
                             <tbody className="divide-y divide-slate-800 bg-background">
                                 {user.data.length > 0 ? (
-                                    user.data.map((item) => (
-                                        <tr
-                                            key={item.id}
-                                            className="transition-colors hover:bg-slate-800/50"
-                                        >
-                                            <td className="px-6 py-4 font-medium whitespace-nowrap text-slate-100">
-                                                {item.name}
-                                            </td>
+                                    user.data.map((item) => {
+                                        const admin = isAdmin(item);
+                                        const locked = isLocked(item);
 
-                                            <td className="px-6 py-4 whitespace-nowrap text-slate-400">
-                                                {item.creator?.name ?? '-'}
-                                            </td>
+                                        return (
+                                            <tr
+                                                key={item.id}
+                                                className="transition-colors hover:bg-slate-800/50"
+                                            >
+                                                <td className="px-6 py-4 font-medium whitespace-nowrap text-slate-100">
+                                                    <div className="flex items-center gap-2">
+                                                        <span>{item.name}</span>
 
-                                            <td className="px-6 py-4 text-right whitespace-nowrap">
-                                                <div className="flex items-center justify-end gap-3">
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => handleEdit(item)}
-                                                        title="Edit pengguna"
-                                                        className="rounded-md p-1.5 text-indigo-400 transition-colors hover:bg-indigo-500/10 hover:text-indigo-300"
-                                                    >
-                                                        <Pencil className="h-4 w-4" />
-                                                    </button>
+                                                        {!admin && locked && (
+                                                            <span
+                                                                title="Akun terkunci"
+                                                                className="inline-flex items-center gap-1 rounded-md border border-red-700 bg-red-900/30 px-1.5 py-0.5 text-xs text-red-400"
+                                                            >
+                                                                <Lock className="h-3 w-3" />
+                                                                Terkunci
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                </td>
 
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => handleDelete(item.id)}
-                                                        title="Hapus pengguna"
-                                                        className="rounded-md p-1.5 text-rose-400 transition-colors hover:bg-rose-500/10 hover:text-rose-300"
-                                                    >
-                                                        <Trash className="h-4 w-4" />
-                                                    </button>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    ))
+                                                <td className="px-6 py-4 whitespace-nowrap text-slate-400">
+                                                    {item.creator?.name ?? '-'}
+                                                </td>
+
+                                                <td className="px-6 py-4 text-right whitespace-nowrap">
+                                                    <div className="flex items-center justify-end gap-3">
+                                                        <button
+                                                            type="button"
+                                                            onClick={() =>
+                                                                handleEdit(item)
+                                                            }
+                                                            title="Edit pengguna"
+                                                            className="rounded-md p-1.5 text-indigo-400 transition-colors hover:bg-indigo-500/10 hover:text-indigo-300"
+                                                        >
+                                                            <Pencil className="h-4 w-4" />
+                                                        </button>
+
+                                                        {!admin && (
+                                                            <button
+                                                                type="button"
+                                                                onClick={() =>
+                                                                    handleToggleLock(
+                                                                        item,
+                                                                    )
+                                                                }
+                                                                title={
+                                                                    locked
+                                                                        ? 'Buka kunci pengguna'
+                                                                        : 'Kunci pengguna'
+                                                                }
+                                                                className={`rounded-md p-1.5 transition-colors ${
+                                                                    locked
+                                                                        ? 'text-red-500 hover:bg-red-500/10 hover:text-red-400'
+                                                                        : 'text-slate-400 hover:bg-slate-500/10 hover:text-slate-200'
+                                                                }`}
+                                                            >
+                                                                {locked ? (
+                                                                    <Lock className="h-4 w-4" />
+                                                                ) : (
+                                                                    <LockOpen className="h-4 w-4" />
+                                                                )}
+                                                            </button>
+                                                        )}
+
+                                                        <button
+                                                            type="button"
+                                                            onClick={() =>
+                                                                handleDelete(
+                                                                    item.id,
+                                                                )
+                                                            }
+                                                            title="Hapus pengguna"
+                                                            className="rounded-md p-1.5 text-rose-400 transition-colors hover:bg-rose-500/10 hover:text-rose-300"
+                                                        >
+                                                            <Trash className="h-4 w-4" />
+                                                        </button>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        );
+                                    })
                                 ) : (
                                     <tr>
                                         <td
@@ -163,11 +328,13 @@ export default function Role({ user, roles }: Props) {
                                                 </div>
 
                                                 <p className="text-base font-medium text-slate-300">
-                                                    Belum Ada Data
+                                                    Tidak Ada Pengguna
                                                 </p>
 
                                                 <p className="mt-1 text-sm text-slate-500">
-                                                    Data pengguna saat ini masih kosong.
+                                                    {roleId
+                                                        ? 'Tidak ada pengguna dengan role yang dipilih.'
+                                                        : 'Data pengguna saat ini masih kosong.'}
                                                 </p>
                                             </div>
                                         </td>
@@ -180,7 +347,8 @@ export default function Role({ user, roles }: Props) {
                     {user.data.length > 0 && (
                         <div className="flex flex-col gap-3 border-t border-slate-800 bg-slate-900/50 px-6 py-4 sm:flex-row sm:items-center sm:justify-between">
                             <p className="text-xs text-slate-400">
-                                Total {user.total} pengguna
+                                Menampilkan {user.data.length} dari {user.total}{' '}
+                                pengguna
                             </p>
 
                             <div className="flex flex-wrap gap-1">

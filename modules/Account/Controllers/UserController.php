@@ -9,6 +9,11 @@ use Modules\Account\Models\Role;
 use App\Models\User;
 use Modules\Account\Services\UserService;
 use Modules\Account\Requests\UserRequests;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Redirect;
 use Inertia\Inertia;
 
 class UserController extends Controller
@@ -19,14 +24,15 @@ class UserController extends Controller
 
     public function index(Request $request)
     {
-        $users = $this->userService->paginate(
-            $request->only([
-                'name',
-                'dateFrom',
-                'dateTo',
-                'archived',
-            ])
-        );
+        $filters = $request->only([
+            'name',
+            'role_id',
+            'dateFrom',
+            'dateTo',
+            'archived',
+        ]);
+
+        $users = $this->userService->paginate($filters);
 
         $roles = Role::query()
             ->select('id', 'name')
@@ -36,9 +42,30 @@ class UserController extends Controller
         return Inertia::render('account/user/index', [
             'user' => $users,
             'roles' => $roles,
+            'filters' => $filters,
         ]);
     }
 
+    public function locked(User $user): RedirectResponse
+    {
+        abort_if(
+            $user->roles()->where('name', 'admin')->exists(),
+            403,
+            'Akun admin tidak dapat dikunci.'
+        );
+
+        DB::transaction(function () use ($user) {
+            $user->lock = ! $user->lock;
+            $user->save();
+        });
+
+        return Redirect::back()->with(
+            'success',
+            $user->lock
+                ? 'Pengguna berhasil dikunci.'
+                : 'Pengguna berhasil dibuka.'
+        );
+    }
 
     public function create(Request $request)
     {

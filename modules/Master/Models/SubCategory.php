@@ -2,33 +2,47 @@
 
 namespace Modules\Master\Models;
 
-use Illuminate\Support\Facades\Auth;
 use App\Models\WhoIs;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Facades\Auth;
 
 class SubCategory extends Model
 {
     use HasFactory, SoftDeletes, WhoIs;
 
-    public $table = "mst_sub_categories";
-    protected $fillable = ['category_id', 'name', 'price', 'created_by', 'updated_by', 'deleted_by'];
+    protected $table = 'mst_sub_categories';
+
+    protected $fillable = [
+        'category_id',
+        'name',
+        'price',
+        'created_by',
+        'updated_by',
+        'deleted_by',
+    ];
 
     protected static function booted(): void
     {
-        static::creating(function (SubCategory $sub_category) {
-            $sub_category->created_by = Auth::id();
+        static::creating(function (SubCategory $subCategory) {
+            $subCategory->created_by = Auth::id();
         });
 
-        static::updating(function (SubCategory $sub_category) {
-            $sub_category->updated_by = Auth::id();
+        static::updating(function (SubCategory $subCategory) {
+            $subCategory->updated_by = Auth::id();
         });
 
-        static::deleting(function (SubCategory $sub_category) {
-            $sub_category->deleted_by = Auth::id();
-            $sub_category->saveQuietly();
+        static::deleting(function (SubCategory $subCategory) {
+            $subCategory->deleted_by = Auth::id();
+            $subCategory->saveQuietly();
         });
+    }
+
+    public function category(): BelongsTo
+    {
+        return $this->belongsTo(Category::class, 'category_id');
     }
 
     public function scopeName($query, ?string $name)
@@ -40,11 +54,13 @@ class SubCategory extends Model
 
     public function scopeRange($query, ?string $dateFrom, ?string $dateTo)
     {
-        return $query->when($dateFrom, function ($q, $dateFrom) {
-            $q->whereDate('created_at', '>=', $dateFrom);
-        })->when($dateTo, function ($q, $dateTo) {
-            $q->whereDate('created_at', '<=', $dateTo);
-        });
+        return $query
+            ->when($dateFrom, function ($q, $dateFrom) {
+                $q->whereDate('created_at', '>=', $dateFrom);
+            })
+            ->when($dateTo, function ($q, $dateTo) {
+                $q->whereDate('created_at', '<=', $dateTo);
+            });
     }
 
     public function scopeArchived($query, ?bool $archived)

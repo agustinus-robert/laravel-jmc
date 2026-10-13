@@ -14,7 +14,6 @@ return new class extends Migration
         Schema::create('transaction_incomings', function (Blueprint $table) {
             $table->id();
 
-
             $table->foreignId('operator_id')
                 ->nullable()
                 ->constrained('users')
@@ -34,7 +33,9 @@ return new class extends Migration
             $table->text('referenced')->nullable();
             $table->text('file')->nullable();
             $table->decimal('grand_total', 15, 2);
-            
+
+            $table->boolean('is_verified')->default(0);
+
             $table->foreignId('created_by')
                 ->nullable()
                 ->constrained('users');

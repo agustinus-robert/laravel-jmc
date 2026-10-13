@@ -18,17 +18,13 @@ class CategoryController extends Controller
 
     public function index(Request $request)
     {
-        $categories = $this->categoryService->paginate(
-            $request->only([
-                'name',
-                'dateFrom',
-                'dateTo',
-                'archived',
-            ])
-        );
+        $filters = $request->only(['search']);
+
+        $categories = $this->categoryService->paginate($filters);
 
         return Inertia::render('master/category/index', [
-            'categories' => $categories
+            'categories' => $categories,
+            'filters' => $filters,
         ]);
     }
 

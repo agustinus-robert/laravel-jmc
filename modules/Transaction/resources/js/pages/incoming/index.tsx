@@ -30,7 +30,7 @@ interface Incoming {
     incoming_from: string;
     referenced: string | null;
     grand_total: number | string;
-    is_verified?: boolean;
+    is_verified?: boolean | number;
     category?: {
         id: number;
         name: string;
@@ -93,6 +93,7 @@ interface Props {
     categories?: Category[];
     subCategories?: SubCategory[];
     years?: number[];
+    isAdmin?: boolean;
 }
 
 export default function IncomingIndex({
@@ -101,6 +102,7 @@ export default function IncomingIndex({
     categories = [],
     subCategories = [],
     years = [],
+    isAdmin = false,
 }: Props) {
     const data = incomings?.data ?? [];
     const links = incomings?.links ?? [];
@@ -111,6 +113,7 @@ export default function IncomingIndex({
         filters.sub_category_id ?? '',
     );
     const [year, setYear] = useState(filters.year ?? '');
+    const [verifyingIds, setVerifyingIds] = useState<number[]>([]);
 
     const initialSearch = useRef(true);
 
@@ -182,25 +185,9 @@ export default function IncomingIndex({
         setCategoryId(value);
         setSubCategoryId('');
 
-        const params: Filters = {
-            ...filters,
+        applyFilters({
             category_id: value,
             sub_category_id: '',
-            search: search.trim(),
-            year,
-            page: undefined,
-        };
-
-        Object.keys(params).forEach((key) => {
-            if (!params[key]) {
-                delete params[key];
-            }
-        });
-
-        router.get(route('transaction.incoming.index'), params, {
-            preserveState: true,
-            preserveScroll: true,
-            replace: true,
         });
     }
 
@@ -247,22 +234,43 @@ export default function IncomingIndex({
 
     function handlePrint(id: number) {
         window.open(
-            route('transaction.incoming.print', { incoming: id }),
+            route('transaction.incoming.receipt', {
+                incoming: id,
+            }),
             '_blank',
+            'noopener,noreferrer',
         );
     }
 
     function handleVerify(id: number) {
-        router.patch(
-            route('transaction.incoming.verify', { incoming: id }),
+        if (!isAdmin) {
+            toast.error('Hanya admin yang dapat memverifikasi invoice.');
+            return;
+        }
+
+        if (verifyingIds.includes(id)) {
+            return;
+        }
+
+        setVerifyingIds((current) => [...current, id]);
+
+        router.post(
+            route('transaction.incoming.verify', {
+                incoming: id,
+            }),
             {},
             {
                 preserveScroll: true,
                 onSuccess: () => {
-                    toast.success('Status verifikasi diperbarui.');
+                    toast.success('Invoice berhasil diverifikasi.');
                 },
                 onError: () => {
-                    toast.error('Gagal memperbarui verifikasi.');
+                    toast.error('Gagal memverifikasi invoice.');
+                },
+                onFinish: () => {
+                    setVerifyingIds((current) =>
+                        current.filter((itemId) => itemId !== id),
+                    );
                 },
             },
         );
@@ -273,10 +281,20 @@ export default function IncomingIndex({
             return;
         }
 
-        router.delete(route('transaction.incoming.destroy', { incoming: id }), {
-            onSuccess: () => toast.success('Transaksi berhasil dihapus.'),
-            onError: () => toast.error('Gagal menghapus transaksi.'),
-        });
+        router.delete(
+            route('transaction.incoming.destroy', {
+                incoming: id,
+            }),
+            {
+                preserveScroll: true,
+                onSuccess: () => {
+                    toast.success('Transaksi berhasil dihapus.');
+                },
+                onError: () => {
+                    toast.error('Gagal menghapus transaksi.');
+                },
+            },
+        );
     }
 
     const formatCurrency = (value: number | string) =>
@@ -356,6 +374,7 @@ export default function IncomingIndex({
                                 className="rounded-md border border-slate-700 bg-slate-900 px-3 py-2.5 text-sm text-slate-100"
                             >
                                 <option value="">Semua Kategori</option>
+
                                 {categories.map((category) => (
                                     <option
                                         key={category.id}
@@ -375,6 +394,7 @@ export default function IncomingIndex({
                                 className="rounded-md border border-slate-700 bg-slate-900 px-3 py-2.5 text-sm text-slate-100 disabled:opacity-50"
                             >
                                 <option value="">Semua Subkategori</option>
+
                                 {filteredSubCategories.map((subcategory) => (
                                     <option
                                         key={subcategory.id}
@@ -393,6 +413,7 @@ export default function IncomingIndex({
                                 className="rounded-md border border-slate-700 bg-slate-900 px-3 py-2.5 text-sm text-slate-100"
                             >
                                 <option value="">Semua Tahun</option>
+
                                 {years.map((itemYear) => (
                                     <option key={itemYear} value={itemYear}>
                                         {itemYear}
@@ -471,107 +492,139 @@ export default function IncomingIndex({
 
                             <tbody className="divide-y divide-slate-800">
                                 {data.length > 0 ? (
-                                    data.map((item) => (
-                                        <tr
-                                            key={item.id}
-                                            className="transition-colors hover:bg-slate-800/50"
-                                        >
-                                            <td className="px-6 py-4 font-medium text-slate-100">
-                                                {item.incoming_from}
-                                            </td>
+                                    data.map((item) => {
+                                        const verified =
+                                            item.is_verified === true ||
+                                            Number(item.is_verified) === 1;
 
-                                            <td className="px-6 py-4">
-                                                {item.category?.name ?? '-'}
-                                            </td>
+                                        const verifying = verifyingIds.includes(
+                                            item.id,
+                                        );
 
-                                            <td className="px-6 py-4">
-                                                {item.sub_category?.name ??
-                                                    item.subCategory?.name ??
-                                                    '-'}
-                                            </td>
+                                        return (
+                                            <tr
+                                                key={item.id}
+                                                className="transition-colors hover:bg-slate-800/50"
+                                            >
+                                                <td className="px-6 py-4 font-medium text-slate-100">
+                                                    {item.incoming_from}
+                                                </td>
 
-                                            <td className="px-6 py-4 whitespace-nowrap">
-                                                {formatDate(item.created_at)}
-                                            </td>
+                                                <td className="px-6 py-4">
+                                                    {item.category?.name ?? '-'}
+                                                </td>
 
-                                            <td className="px-6 py-4">
-                                                {item.operator_id ?? '-'}
-                                            </td>
+                                                <td className="px-6 py-4">
+                                                    {item.sub_category?.name ??
+                                                        item.subCategory
+                                                            ?.name ??
+                                                        '-'}
+                                                </td>
 
-                                            <td className="px-6 py-4 whitespace-nowrap">
-                                                {formatCurrency(
-                                                    item.grand_total,
-                                                )}
-                                            </td>
+                                                <td className="px-6 py-4 whitespace-nowrap">
+                                                    {formatDate(
+                                                        item.created_at,
+                                                    )}
+                                                </td>
 
-                                            <td className="px-6 py-4">
-                                                {item.creator?.name ?? '-'}
-                                            </td>
+                                                <td className="px-6 py-4">
+                                                    {item.operator_id ?? '-'}
+                                                </td>
 
-                                            <td className="px-6 py-4 text-center">
-                                                <button
-                                                    type="button"
-                                                    onClick={() =>
-                                                        handleVerify(item.id)
-                                                    }
-                                                    title={
-                                                        item.is_verified
-                                                            ? 'Sudah diverifikasi'
-                                                            : 'Verifikasi transaksi'
-                                                    }
-                                                    className={`inline-flex h-8 w-8 items-center justify-center rounded-md border ${
-                                                        item.is_verified
-                                                            ? 'border-emerald-700 bg-emerald-900/40 text-emerald-400'
-                                                            : 'border-slate-700 text-slate-500 hover:border-emerald-700 hover:text-emerald-400'
-                                                    }`}
-                                                >
-                                                    <Check className="h-4 w-4" />
-                                                </button>
-                                            </td>
+                                                <td className="px-6 py-4 whitespace-nowrap">
+                                                    {formatCurrency(
+                                                        item.grand_total,
+                                                    )}
+                                                </td>
 
-                                            <td className="px-6 py-4 text-right">
-                                                <div className="flex items-center justify-end gap-3">
-                                                    <button
-                                                        type="button"
-                                                        onClick={() =>
-                                                            handlePrint(item.id)
-                                                        }
-                                                        title="Cetak surat masuk"
-                                                        className="text-slate-400 hover:text-white"
-                                                    >
-                                                        <Printer className="h-4 w-4" />
-                                                    </button>
+                                                <td className="px-6 py-4">
+                                                    {item.creator?.name ?? '-'}
+                                                </td>
 
-                                                    <Link
-                                                        href={route(
-                                                            'transaction.incoming.edit',
-                                                            {
-                                                                incoming:
+                                                <td className="px-6 py-4 text-center">
+                                                    {verified ? (
+                                                        <span
+                                                            title="Sudah diverifikasi"
+                                                            className="inline-flex items-center gap-1.5 rounded-md border border-emerald-700 bg-emerald-900/40 px-2 py-1 text-xs text-emerald-400"
+                                                        >
+                                                            <Check className="h-3.5 w-3.5" />
+                                                            Terverifikasi
+                                                        </span>
+                                                    ) : (
+                                                        <button
+                                                            type="button"
+                                                            onClick={() =>
+                                                                handleVerify(
                                                                     item.id,
-                                                            },
-                                                        )}
-                                                        className="text-indigo-400 hover:text-indigo-300"
-                                                        title="Edit"
-                                                    >
-                                                        <Pencil className="h-4 w-4" />
-                                                    </Link>
+                                                                )
+                                                            }
+                                                            disabled={
+                                                                !isAdmin ||
+                                                                verifying
+                                                            }
+                                                            title={
+                                                                !isAdmin
+                                                                    ? 'Hanya admin yang dapat memverifikasi'
+                                                                    : 'Verifikasi invoice'
+                                                            }
+                                                            className="inline-flex items-center gap-1.5 rounded-md border border-amber-700 px-2 py-1 text-xs text-amber-400 hover:bg-amber-900/30 disabled:cursor-not-allowed disabled:opacity-50"
+                                                        >
+                                                            <Check className="h-3.5 w-3.5" />
+                                                            {verifying
+                                                                ? 'Memproses...'
+                                                                : 'Verifikasi'}
+                                                        </button>
+                                                    )}
+                                                </td>
 
-                                                    <button
-                                                        type="button"
-                                                        onClick={() =>
-                                                            handleDelete(
-                                                                item.id,
-                                                            )
-                                                        }
-                                                        className="text-rose-400 hover:text-rose-300"
-                                                        title="Hapus"
-                                                    >
-                                                        <Trash className="h-4 w-4" />
-                                                    </button>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    ))
+                                                <td className="px-6 py-4 text-right">
+                                                    <div className="flex items-center justify-end gap-3">
+                                                        {verified && (
+                                                            <button
+                                                                type="button"
+                                                                onClick={() =>
+                                                                    handlePrint(
+                                                                        item.id,
+                                                                    )
+                                                                }
+                                                                title="Cetak nota invoice"
+                                                                className="text-slate-400 hover:text-white"
+                                                            >
+                                                                <Printer className="h-4 w-4" />
+                                                            </button>
+                                                        )}
+
+                                                        <Link
+                                                            href={route(
+                                                                'transaction.incoming.edit',
+                                                                {
+                                                                    incoming:
+                                                                        item.id,
+                                                                },
+                                                            )}
+                                                            className="text-indigo-400 hover:text-indigo-300"
+                                                            title="Edit"
+                                                        >
+                                                            <Pencil className="h-4 w-4" />
+                                                        </Link>
+
+                                                        <button
+                                                            type="button"
+                                                            onClick={() =>
+                                                                handleDelete(
+                                                                    item.id,
+                                                                )
+                                                            }
+                                                            className="text-rose-400 hover:text-rose-300"
+                                                            title="Hapus"
+                                                        >
+                                                            <Trash className="h-4 w-4" />
+                                                        </button>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        );
+                                    })
                                 ) : (
                                     <tr>
                                         <td

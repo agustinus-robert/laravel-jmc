@@ -57,6 +57,8 @@ class IncomingController extends Controller
                 ->distinct()
                 ->orderByDesc('year')
                 ->pluck('year'),
+
+            'isAdmin' => $this->isAdmin(),
         ]);
     }
 
@@ -201,6 +203,36 @@ class IncomingController extends Controller
                     'message' => 'Gagal menghapus transaksi masuk.',
                 ]);
         }
+    }
+
+    public function verify(Incoming $incoming)
+    {
+        abort_unless($this->isAdmin(), 403);
+
+        if ($incoming->is_verified) {
+            return back()->with('info', 'Invoice sudah diverifikasi.');
+        }
+
+        $incoming->forceFill([
+            'is_verified' => true,
+            'updated_by' => Auth::id(),
+        ])->save();
+
+        return back()->with('success', 'Invoice berhasil diverifikasi.');
+    }
+
+    public function receipt(Incoming $incoming)
+    {
+        $incoming->load([
+            'creator:id,name',
+            'category:id,name',
+            'subCategory:id,name',
+            'items',
+        ]);
+
+        return Inertia::render('transaction/incoming/receipt', [
+            'incoming' => $incoming,
+        ]);
     }
 
     private function isAdmin(): bool

@@ -26,18 +26,14 @@ class SubCategoryController extends Controller
 
     public function index(Request $request)
     {
-        $subCategories = $this->subCategoryService->paginate(
-            $request->only([
-                'name',
-                'dateFrom',
-                'dateTo',
-                'archived',
-            ])
-        );
+        $filters = $request->only(['search', 'dateFrom', 'dateTo', 'archived']);
+
+        $subCategories = $this->subCategoryService->paginate($filters);
 
         return Inertia::render('master/scategory/index', [
             'scategories' => $subCategories,
             'categories' => $this->categoryOptions(),
+            'filters' => $filters,
         ]);
     }
 

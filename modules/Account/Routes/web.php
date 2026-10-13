@@ -14,6 +14,9 @@ Route::middleware(['web', 'auth'])
         Route::resource('/role', RoleController::class);
         Route::resource('/permission', PermissionController::class);
 
+        Route::patch('/user/{user}/locked', [UserController::class, 'locked'])
+            ->name('user.locked');
+
         Route::get(
             '/role-permission/{role}',
             [RolePermissionController::class, 'show']
