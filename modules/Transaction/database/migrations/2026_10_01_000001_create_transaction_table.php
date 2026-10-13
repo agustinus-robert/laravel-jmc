@@ -63,7 +63,7 @@ return new class extends Migration
             $table->unsignedInteger('qty');
             $table->string('uom');
             $table->decimal('total', 15, 0);
-            $table->date('expired');
+            $table->date('expired')->nullable(false)->change();
 
             
             $table->foreignId('created_by')
