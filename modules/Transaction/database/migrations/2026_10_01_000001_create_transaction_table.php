@@ -17,12 +17,12 @@ return new class extends Migration
 
             $table->foreignId('operator_id')
                 ->nullable()
-                ->constrained('mst_categories')
+                ->constrained('users')
                 ->cascadeOnDelete();
 
             $table->foreignId('category_id')
                 ->nullable()
-                ->constrained('mst_core_categories')
+                ->constrained('mst_categories')
                 ->cascadeOnDelete();
 
             $table->foreignId('sub_category_id')
