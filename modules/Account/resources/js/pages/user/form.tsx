@@ -18,6 +18,7 @@ interface Role {
 interface Props {
     roles: Role[];
     user?: User;
+    onClose: () => void;
 }
 
 interface FormData {
@@ -28,14 +29,19 @@ interface FormData {
     retype_password: string;
 }
 
-export default function UserForm({ roles, user }: Props) {
-    const { data, setData, post, put, processing, errors } = useForm<FormData>({
-        role_id: user?.role_id ?? 0,
-        name: user?.name ?? '',
-        email: user?.email ?? '',
-        password: '',
-        retype_password: '',
-    });
+export default function UserForm({
+    roles,
+    user,
+    onClose,
+}: Props) {
+    const { data, setData, post, put, processing, errors } =
+        useForm<FormData>({
+            role_id: user?.role_id ?? 0,
+            name: user?.name ?? '',
+            email: user?.email ?? '',
+            password: '',
+            retype_password: '',
+        });
 
     function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
         e.preventDefault();
@@ -45,29 +51,34 @@ export default function UserForm({ roles, user }: Props) {
             return;
         }
 
+        const options = {
+            onSuccess: () => {
+                toast.success(
+                    user
+                        ? 'Pengguna berhasil diperbarui.'
+                        : 'Pengguna berhasil ditambahkan.',
+                );
+
+                onClose();
+            },
+            onError: () => {
+                toast.error(
+                    user
+                        ? 'Gagal memperbarui pengguna.'
+                        : 'Gagal menambahkan pengguna.',
+                );
+            },
+        };
+
         if (user) {
             put(
                 route('account.user.update', {
                     user: user.id,
                 }),
-                {
-                    onSuccess: () => {
-                        toast.success('Pengguna berhasil diperbarui.');
-                    },
-                    onError: () => {
-                        toast.error('Gagal memperbarui pengguna.');
-                    },
-                },
+                options,
             );
         } else {
-            post(route('account.user.store'), {
-                onSuccess: () => {
-                    toast.success('Pengguna berhasil ditambahkan.');
-                },
-                onError: () => {
-                    toast.error('Gagal menambahkan pengguna.');
-                },
-            });
+            post(route('account.user.store'), options);
         }
     }
 
@@ -75,9 +86,9 @@ export default function UserForm({ roles, user }: Props) {
         <form onSubmit={handleSubmit}>
             <fieldset disabled={processing}>
                 <div className="border-b border-slate-800 px-6 py-4">
-                    <h2 className="flex gap-3 text-lg font-semibold text-slate-100">
+                    <h2 className="flex items-center gap-3 text-lg font-semibold text-slate-100">
                         <ListTree />
-                        {user ? 'Pembaruan Pengguna' : 'Buat Pengguna'}
+                        {user ? 'Edit Pengguna' : 'Tambah Pengguna'}
                     </h2>
 
                     <p className="mt-1 text-sm text-slate-400">
@@ -99,13 +110,13 @@ export default function UserForm({ roles, user }: Props) {
                         <select
                             id="role_id"
                             name="role_id"
-                            value={data.role_id}
+                            value={data.role_id || ''}
                             onChange={(e) =>
                                 setData('role_id', Number(e.target.value))
                             }
                             className="w-full rounded-md border border-slate-700 bg-background px-3 py-2 text-sm text-slate-100 outline-none focus:border-primary"
                         >
-                            <option value={0}>Pilih Role</option>
+                            <option value="">Pilih Role</option>
 
                             {roles.map((role) => (
                                 <option key={role.id} value={role.id}>
@@ -134,7 +145,9 @@ export default function UserForm({ roles, user }: Props) {
                             id="name"
                             name="name"
                             value={data.name}
-                            onChange={(e) => setData('name', e.target.value)}
+                            onChange={(e) =>
+                                setData('name', e.target.value)
+                            }
                             placeholder="Masukkan nama pengguna"
                             className="w-full rounded-md border border-slate-700 bg-background px-3 py-2 text-sm text-slate-100 outline-none focus:border-primary"
                         />
@@ -159,7 +172,9 @@ export default function UserForm({ roles, user }: Props) {
                             id="email"
                             name="email"
                             value={data.email}
-                            onChange={(e) => setData('email', e.target.value)}
+                            onChange={(e) =>
+                                setData('email', e.target.value)
+                            }
                             placeholder="Masukkan email pengguna"
                             className="w-full rounded-md border border-slate-700 bg-background px-3 py-2 text-sm text-slate-100 outline-none focus:border-primary"
                         />
@@ -192,6 +207,7 @@ export default function UserForm({ roles, user }: Props) {
                                     ? 'Kosongkan jika tidak ingin mengubah'
                                     : 'Masukkan kata sandi'
                             }
+                            autoComplete="new-password"
                             className="w-full rounded-md border border-slate-700 bg-background px-3 py-2 text-sm text-slate-100 outline-none focus:border-primary"
                         />
 
@@ -219,6 +235,7 @@ export default function UserForm({ roles, user }: Props) {
                                 setData('retype_password', e.target.value)
                             }
                             placeholder="Ulangi kata sandi"
+                            autoComplete="new-password"
                             className="w-full rounded-md border border-slate-700 bg-background px-3 py-2 text-sm text-slate-100 outline-none focus:border-primary"
                         />
 
@@ -241,10 +258,11 @@ export default function UserForm({ roles, user }: Props) {
             <div className="flex justify-end gap-2 border-t border-slate-800 px-6 py-4">
                 <button
                     type="button"
+                    onClick={onClose}
                     disabled={processing}
                     className="rounded-md border border-slate-700 px-4 py-2 text-sm font-medium text-slate-300 hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50"
                 >
-                    Kembali
+                    Batal
                 </button>
 
                 <button

@@ -50,15 +50,15 @@ export const mainNavGroups: NavGroup[] = [
         title: 'Master',
         items: [
             {
-                title: 'Core Kategori',
-                href: '/master/core-category',
-                icon: ListStartIcon,
-            },
-            {
                 title: 'Kategori',
                 href: '/master/category',
                 icon: ListTree,
-            }
+            },
+            {
+                title: 'Sub Kategori',
+                href: '/master/sub-category',
+                icon: ListStartIcon,
+            },
         ],
     },
 

@@ -7,30 +7,27 @@ use App\Models\WhoIs;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use Illuminate\Support\Str;
 
-class CoreCategory extends Model
+class SubCategory extends Model
 {
     use HasFactory, SoftDeletes, WhoIs;
 
-    public $table = "mst_core_categories";
-    protected $fillable = ['name', 'slug', 'description', 'created_by', 'updated_by', 'deleted_by'];
+    public $table = "mst_sub_categories";
+    protected $fillable = ['category_id', 'name', 'price', 'created_by', 'updated_by', 'deleted_by'];
 
     protected static function booted(): void
     {
-        static::creating(function (CoreCategory $coreCategory) {
-            $coreCategory->created_by = Auth::id();
-            $coreCategory->slug = Str::slug($coreCategory->name);
+        static::creating(function (SubCategory $sub_category) {
+            $sub_category->created_by = Auth::id();
         });
 
-        static::updating(function (CoreCategory $coreCategory) {
-            $coreCategory->updated_by = Auth::id();
-            $coreCategory->slug = Str::slug($coreCategory->name);
+        static::updating(function (SubCategory $sub_category) {
+            $sub_category->updated_by = Auth::id();
         });
 
-        static::deleting(function (CoreCategory $coreCategory) {
-            $coreCategory->deleted_by = Auth::id();
-            $coreCategory->saveQuietly();
+        static::deleting(function (SubCategory $sub_category) {
+            $sub_category->deleted_by = Auth::id();
+            $sub_category->saveQuietly();
         });
     }
 

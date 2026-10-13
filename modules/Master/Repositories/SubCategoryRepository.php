@@ -2,13 +2,13 @@
 
 namespace Modules\Master\Repositories;
 
-use Modules\Master\Models\CoreCategory;
+use Modules\Master\Models\SubCategory;
 
-class CoreCategoryRepository
+class SubCategoryRepository
 {
     public function paginate(array $filters)
     {
-        return CoreCategory::query()
+        return SubCategory::query()
             ->with('creator:id,name')
             ->name($filters['name'] ?? null)
             ->range(
@@ -21,7 +21,7 @@ class CoreCategoryRepository
 
     public function stored($array)
     {
-        $category = new CoreCategory();
+        $category = new SubCategory();
 
         $category->fill($array);
         $category->save();
@@ -31,12 +31,12 @@ class CoreCategoryRepository
 
     public function getFromId($id)
     {
-        return CoreCategory::where('id', $id)->get();
+        return SubCategory::where('id', $id)->get();
     }
 
     public function updated($id, $array)
     {
-        $category = CoreCategory::findOrFail($id);
+        $category = SubCategory::findOrFail($id);
 
         $category->fill($array);
         $category->save();
@@ -46,7 +46,7 @@ class CoreCategoryRepository
 
     public function deleted($id)
     {
-        $category = CoreCategory::findOrFail($id);
+        $category = SubCategory::findOrFail($id);
 
         return $category->delete();
     }

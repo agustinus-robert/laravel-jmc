@@ -1,17 +1,24 @@
-import { Link, Head } from '@inertiajs/react';
+import { Head, Link, router } from '@inertiajs/react';
 import { route } from 'ziggy-js';
-import { router } from '@inertiajs/react';
-import { Pencil, Trash, FolderOpen, Plus } from 'lucide-react';
+import { useState } from 'react';
+import AppModal from '../../../../../../resources/js/components/app-modal';
+import CategoryForm from './form';
+import {
+    Pencil,
+    Trash,
+    FolderOpen,
+    Plus,
+} from 'lucide-react';
 import { toast } from 'sonner';
 
 interface Category {
     id: number;
+    code: string;
     name: string;
-    slug: string;
     creator: {
         id: number;
         name: string;
-    };
+    } | null;
 }
 
 interface PaginationLink {
@@ -32,15 +39,27 @@ interface Props {
 }
 
 export default function Category({ categories }: Props) {
+    const [modalOpen, setModalOpen] = useState(false);
+    const [selectedCategory, setSelectedCategory] =
+        useState<Category | undefined>(undefined);
+
+    function handleCreate() {
+        setSelectedCategory(undefined);
+        setModalOpen(true);
+    }
+
+    function handleEdit(category: Category) {
+        setSelectedCategory(category);
+        setModalOpen(true);
+    }
+
     function handleDelete(id: number) {
         if (!confirm('Apakah Anda yakin ingin menghapus kategori ini?')) {
             return;
         }
 
         router.delete(
-            route('master.category.destroy', {
-                category: id,
-            }),
+            route('master.category.destroy', { category: id }),
             {
                 onSuccess: () => {
                     toast.success('Kategori berhasil dihapus.');
@@ -51,9 +70,16 @@ export default function Category({ categories }: Props) {
             },
         );
     }
+
+    function handleCloseModal() {
+        setModalOpen(false);
+        setSelectedCategory(undefined);
+    }
+
     return (
         <>
             <Head title="Kategori" />
+
             <div className="w-full px-4 py-8 sm:px-6 lg:px-8">
                 <div className="w-full overflow-hidden rounded-xl border border-slate-800 bg-background shadow-xl">
                     <div className="flex items-center justify-between border-b border-slate-800 bg-background px-6 py-4">
@@ -61,44 +87,35 @@ export default function Category({ categories }: Props) {
                             Daftar Kategori
                         </h2>
 
-                        <Link
-                            href={route('master.category.create')}
-                            className="btn rounded-md bg-slate-800 px-4 py-2 text-sm font-medium text-white"
+                        <button
+                            type="button"
+                            onClick={handleCreate}
+                            className="inline-flex items-center gap-2 rounded-md bg-slate-800 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-slate-700"
                         >
+                            <Plus className="h-4 w-4" />
                             Tambah
-                        </Link>
+                        </button>
                     </div>
 
                     <div className="w-full overflow-x-auto">
                         <table className="w-full text-left text-sm text-slate-300">
                             <thead className="border-b border-slate-800 bg-background text-xs tracking-wider text-slate-400 uppercase">
                                 <tr>
-                                    <th
-                                        scope="col"
-                                        className="px-6 py-3.5 font-medium"
-                                    >
-                                        Name
+                                    <th className="px-6 py-3.5 font-medium">
+                                        Nama
                                     </th>
-                                    <th
-                                        scope="col"
-                                        className="px-6 py-3.5 font-medium"
-                                    >
+                                    <th className="px-6 py-3.5 font-medium">
                                         Slug
                                     </th>
-                                    <th
-                                        scope="col"
-                                        className="px-6 py-3.5 font-medium"
-                                    >
+                                    <th className="px-6 py-3.5 font-medium">
                                         Dibuat Oleh
                                     </th>
-                                    <th
-                                        scope="col"
-                                        className="px-6 py-3.5 text-right font-medium"
-                                    >
+                                    <th className="px-6 py-3.5 text-right font-medium">
                                         Aksi
                                     </th>
                                 </tr>
                             </thead>
+
                             <tbody className="divide-y divide-slate-800 bg-background">
                                 {categories.data.length > 0 ? (
                                     categories.data.map((item) => (
@@ -106,36 +123,37 @@ export default function Category({ categories }: Props) {
                                             key={item.id}
                                             className="transition-colors hover:bg-slate-800/50"
                                         >
+                                            <td className="px-6 py-4 whitespace-nowrap">
+                                                <span className="inline-flex items-center rounded-full border border-slate-700 bg-slate-800 px-2.5 py-0.5 text-xs font-medium text-slate-300">
+                                                    {item.code}
+                                                </span>
+                                            </td>
+
                                             <td className="px-6 py-4 font-medium whitespace-nowrap text-slate-100">
                                                 {item.name}
                                             </td>
-                                            <td className="px-6 py-4 whitespace-nowrap">
-                                                <span className="bg-background-800 inline-flex items-center rounded-full border border-slate-700 px-2.5 py-0.5 text-xs font-medium text-slate-300">
-                                                    {item.slug}
-                                                </span>
-                                            </td>
+
+
                                             <td className="px-6 py-4 whitespace-nowrap text-slate-400">
                                                 {item.creator?.name ?? '-'}
                                             </td>
-                                            <td className="px-6 py-4 text-right text-sm whitespace-nowrap">
+
+                                            <td className="px-6 py-4 text-right whitespace-nowrap">
                                                 <div className="flex items-center justify-end gap-3">
-                                                    <Link
-                                                        href={route(
-                                                            'master.category.edit',
-                                                            item.id,
-                                                        )}
-                                                        className="inline-flex items-center gap-1.5 font-medium text-indigo-400 transition-colors hover:text-indigo-300"
-                                                    >
-                                                        <Pencil className="h-4 w-4" />{' '}
-                                                    </Link>
                                                     <button
                                                         type="button"
-                                                        onClick={() =>
-                                                            handleDelete(
-                                                                item.id,
-                                                            )
-                                                        }
-                                                        className="inline-flex items-center gap-1.5 font-medium text-rose-400 transition-colors hover:text-rose-300"
+                                                        onClick={() => handleEdit(item)}
+                                                        title="Edit kategori"
+                                                        className="rounded-md p-1.5 text-indigo-400 transition-colors hover:bg-indigo-500/10 hover:text-indigo-300"
+                                                    >
+                                                        <Pencil className="h-4 w-4" />
+                                                    </button>
+
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => handleDelete(item.id)}
+                                                        title="Hapus kategori"
+                                                        className="rounded-md p-1.5 text-rose-400 transition-colors hover:bg-rose-500/10 hover:text-rose-300"
                                                     >
                                                         <Trash className="h-4 w-4" />
                                                     </button>
@@ -153,12 +171,13 @@ export default function Category({ categories }: Props) {
                                                 <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-slate-800 text-slate-500">
                                                     <FolderOpen className="h-6 w-6" />
                                                 </div>
+
                                                 <p className="text-base font-medium text-slate-300">
                                                     Belum Ada Data
                                                 </p>
+
                                                 <p className="mt-1 text-sm text-slate-500">
-                                                    Data kategori saat ini masih
-                                                    kosong.
+                                                    Data kategori saat ini masih kosong.
                                                 </p>
                                             </div>
                                         </td>
@@ -169,12 +188,22 @@ export default function Category({ categories }: Props) {
                     </div>
 
                     {categories.data.length > 0 && (
-                        <div className="flex items-center justify-between border-t border-slate-800 bg-slate-900/50 px-6 py-4">
+                        <div className="flex flex-col gap-3 border-t border-slate-800 bg-slate-900/50 px-6 py-4 sm:flex-row sm:items-center sm:justify-between">
+                            <p className="text-xs text-slate-400">
+                                Total {categories.total} kategori
+                            </p>
+
                             <div className="flex flex-wrap gap-1">
                                 {categories.links.map((link, index) => (
                                     <Link
                                         key={index}
                                         href={link.url ?? '#'}
+                                        preserveScroll
+                                        onClick={(event) => {
+                                            if (!link.url) {
+                                                event.preventDefault();
+                                            }
+                                        }}
                                         dangerouslySetInnerHTML={{
                                             __html: link.label,
                                         }}
@@ -192,6 +221,22 @@ export default function Category({ categories }: Props) {
                     )}
                 </div>
             </div>
+
+            <AppModal
+                open={modalOpen}
+                onClose={handleCloseModal}
+                title={
+                    selectedCategory
+                        ? 'Edit Kategori'
+                        : 'Tambah Kategori'
+                }
+            >
+                <CategoryForm
+                    key={selectedCategory?.id ?? 'create'}
+                    category={selectedCategory}
+                    onClose={handleCloseModal}
+                />
+            </AppModal>
         </>
     );
 }

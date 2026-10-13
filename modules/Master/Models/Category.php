@@ -7,13 +7,14 @@ use App\Models\WhoIs;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Str;
 
 class Category extends Model
 {
     use HasFactory, SoftDeletes, WhoIs;
 
     public $table = "mst_categories";
-    protected $fillable = ['name', 'slug', 'parent_id', 'created_by', 'updated_by', 'deleted_by'];
+    protected $fillable = ['code', 'name', 'created_by', 'updated_by', 'deleted_by'];
 
     protected static function booted(): void
     {

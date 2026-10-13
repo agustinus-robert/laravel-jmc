@@ -33,7 +33,8 @@ return new class extends Migration
             $table->text('incoming_from');
             $table->text('referenced')->nullable();
             $table->text('file')->nullable();
-
+            $table->decimal('grand_total', 15, 2);
+            
             $table->foreignId('created_by')
                 ->nullable()
                 ->constrained('users');

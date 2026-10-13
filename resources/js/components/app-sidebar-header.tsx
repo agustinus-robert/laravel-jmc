@@ -87,7 +87,7 @@ export function AppSidebarHeader({
                     <span>Ke Beranda</span>
                 </Link>
 
-                <div className="relative ml-auto">
+                {/* <div className="relative ml-auto">
                     <button
                         type="button"
                         onClick={() => setOpen(!open)}
@@ -124,7 +124,7 @@ export function AppSidebarHeader({
                             </div>
                         </div>
                     )}
-                </div>
+                </div> */}
             </div>
         </header>
     );

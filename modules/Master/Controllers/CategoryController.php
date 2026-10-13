@@ -3,7 +3,7 @@
 namespace Modules\Master\Controllers;
 
 use Illuminate\Http\Request;
-use Modules\Master\Models\CoreCategory;
+use Modules\Master\Models\SubCategory;
 use Modules\Master\Models\Category;
 use Illuminate\Routing\Controller;
 use Modules\Master\Requests\CategoryRequests;
@@ -34,7 +34,7 @@ class CategoryController extends Controller
 
     public function create()
     {
-        $ccategories = CoreCategory::get();
+        $ccategories = Category::get();
         return Inertia::render('master/category/form', [
             'ccategories' => $ccategories
         ]);
@@ -42,7 +42,7 @@ class CategoryController extends Controller
 
     public function edit(Category $category)
     {
-        $ccategories = CoreCategory::get();
+        $ccategories = Category::get();
         return Inertia::render('master/category/form', [
             'ccategories' => $ccategories,
             'category' => $category
@@ -52,7 +52,7 @@ class CategoryController extends Controller
     public function store(CategoryRequests $request)
     {
         $data = $request->validated();
-
+        
         try {
             $this->categoryService->form(null, $data);
         } catch (\Throwable $e) {

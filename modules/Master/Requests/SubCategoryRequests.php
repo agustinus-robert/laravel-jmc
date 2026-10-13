@@ -4,13 +4,14 @@ namespace Modules\Master\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
 
-class CoreCategoryRequests extends FormRequest
+class SubCategoryRequests extends FormRequest
 {
     public function rules(): array
     {
         return [
+            'category_id' => ['required', 'integer', 'exists:mst_categories,id'],
             'name' => ['required', 'string', 'max:255'],
-            'slug' => ['required', 'string']
+            'price' => ['required', 'numeric', 'min:0'],
         ];
     }
 }

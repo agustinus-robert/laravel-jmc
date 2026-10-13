@@ -19,9 +19,6 @@ class UserController extends Controller
 
     public function index(Request $request)
     {
-        //Gate::authorize('create', User::class);
-        //$this->authorize('permission', ['user', 'create']);
-
         $users = $this->userService->paginate(
             $request->only([
                 'name',
@@ -31,10 +28,17 @@ class UserController extends Controller
             ])
         );
 
+        $roles = Role::query()
+            ->select('id', 'name')
+            ->orderBy('name')
+            ->get();
+
         return Inertia::render('account/user/index', [
-            'user' => $users
+            'user' => $users,
+            'roles' => $roles,
         ]);
     }
+
 
     public function create(Request $request)
     {

@@ -9,7 +9,11 @@ class IncomingRepository
     public function paginate(array $filters)
     {
         return Incoming::query()
-            ->with('creator:id,name')
+            ->with([
+                'creator:id,name',
+                'category:id,name',
+                'subCategory:id,name',
+            ])
             ->name($filters['name'] ?? null)
             ->range(
                 $filters['dateFrom'] ?? null,
@@ -19,35 +23,42 @@ class IncomingRepository
             ->paginate(10);
     }
 
-    public function stored($array)
+    public function stored(array $array)
     {
-        $category = new Incoming();
+        $incoming = new Incoming();
 
-        $category->fill($array);
-        $category->save();
+        $incoming->fill($array);
+        $incoming->save();
 
-        return $category;
+        return $incoming;
     }
 
     public function getFromId($id)
     {
-        return Incoming::where('id', $id)->get();
+        return Incoming::query()
+            ->with([
+                'items',
+                'category',
+                'subCategory',
+                'creator',
+            ])
+            ->findOrFail($id);
     }
 
-    public function updated($id, $array)
+    public function updated($id, array $array)
     {
-        $category = Incoming::findOrFail($id);
+        $incoming = Incoming::findOrFail($id);
 
-        $category->fill($array);
-        $category->save();
+        $incoming->fill($array);
+        $incoming->save();
 
-        return $category;
+        return $incoming;
     }
 
     public function deleted($id)
     {
-        $category = Incoming::findOrFail($id);
+        $incoming = Incoming::findOrFail($id);
 
-        return $category->delete();
+        return $incoming->delete();
     }
 }
